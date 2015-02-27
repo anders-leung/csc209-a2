@@ -15,7 +15,10 @@ void print_list(struct block *list) {
 
         //printf("    [addr: %p, size: %d]\n", , );
 
-    printf("\n");
+    int i = 0;
+    for(i = 0; i < strlen(list); i++) {
+        printf("    [addr: %p, size: %d]\n", *list[i], sizeof(list[i]));
+    }
 }
 
 void print_allocated() {
