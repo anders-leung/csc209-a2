@@ -20,35 +20,27 @@ void *smalloc(unsigned int nbytes) {
     freeblock = freelist;
 
     // Search for a block with larger than the required size.
+
     while (freeblock->size < nbytes && freeblock->next != NULL) {
         freeblock = freeblock->next;
     }
     
     if (freeblock->size >= nbytes) {
-	printf("Address of block with adequate size: %p\n", freeblock->addr);
         struct block *next = allocated_list;
-        struct block *allocate = malloc(nbytes);
-	printf("				allocate: %p\n", &allocate);
+        struct block *allocate = malloc(sizeof(struct block));
         
         if (allocated_list == NULL) {
-            allocated_list = malloc(nbytes);
-            allocated_list->addr = freeblock->addr;
-            allocated_list->size = nbytes;
-            allocated_list->next = NULL;
+            next = NULL;
         }
         
-        else {
         allocate->addr = freeblock->addr;
         allocate->size = nbytes;
         allocate->next = next;
-        *allocated_list = allocate;
-	printf("				allocated_list: %p\n", &allocated_list);
-	printf("allocated_list->addr: %p\n", allocated_list->addr);
+        allocated_list = allocate;
         freeblock->addr = freeblock->addr + nbytes;
         freeblock->size = freeblock->size - nbytes;
-	printf("freelist->addr: %p\n\n", freelist->addr);
         return allocated_list->addr;
-        }
+        
     }
 
     return NULL;
@@ -98,12 +90,14 @@ int sfree(void *addr) {
         parentblock->next = childblock->next;
     }
 
-    find_parent_and_child(addr, freelist);
+    find_parent_and_child(block_to_remove, freelist);
     parentblock = pointers[0];
     childblock = pointers[1];
 
-    if (childblock->addr != addr) {
-        return -1;
+    if (freelist->size == 0) {
+        block_to_remove->next = NULL;
+        freelist = block_to_remove;
+        return 0;
     }
 
     if (childblock == freelist) {
@@ -115,6 +109,8 @@ int sfree(void *addr) {
         parentblock->next = block_to_remove;
         block_to_remove->next = childblock;
     }
+
+    return 0;
 }
 
 
@@ -143,10 +139,10 @@ void mem_init(int size) {
 
     /* NOTE: this function is incomplete */
 
-    freelist = malloc(size);
+    freelist = malloc(sizeof(struct block));
     freelist->addr = mem;
     freelist->size = size;
-    freelist->next = NULL;    
+    freelist->next = NULL;
 }
 
 
@@ -154,43 +150,18 @@ void mem_clean(){
     struct block *lists[2];
     lists[0] = allocated_list;
     lists[1] = freelist;
-
+ 
     int j;
     for (j = 0; j < 2; j++) {
-        struct block *list = lists[j];
-        struct block *block;
-        struct block *next_block;
-        for (block = list; free != NULL; ) {
+        struct block *block = lists[j];
+ 	struct block *next_block;
+
+ 	while (block != NULL) {
             next_block = block->next;
-            free(&block);
+            free(block);
             block = next_block;
         }
     }
 }
 
-
-int main(int argc, char ** argv) {
-	printf("\n\n");
-	mem_init(1000000);
-	void *ptrs[3];
-        printf("ptrs[0] = smalloc(1000001)\n");
-        ptrs[0] = smalloc(1000001);
-	printf("ptrs[0] = smalloc(16)\n");
-	ptrs[0] = smalloc(16);
-	printf("ptrs[1] = smalloc(24)\n");
-	ptrs[1] = smalloc(24);
-	printf("ptrs[2] = smalloc(32)\n");
-	ptrs[2] = smalloc(32);
-	printf("sfree(ptrs[0])\n");
-        sfree(ptrs[0]);
-	printf("mem_clean()\n");
-//        mem_clean();
-	free(&allocated_list->next);
-//	free(&allocated_list->addr);
-//	free(&allocated_list->size); 
-	allocated_list = NULL;
-	printf("	allocated_list->addr: %p\n", &allocated_list->addr);
-	printf("	freelist->addr: %p\n", freelist->addr);
-	return 0;
-}
 
